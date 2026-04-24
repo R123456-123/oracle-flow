@@ -1,0 +1,20 @@
+# Environments
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.vscode/
+.idea/
+
+# files
+read.txt
+test_run.py
