@@ -8,13 +8,13 @@ import json
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Use Gemini 2.5 Flash for fast, cheap inference
+# using gemini 2.5 flash
 MODEL_ID = 'gemini-2.5-flash'
 
 def actor_agent(property_data: dict) -> str:
     """The Primary Agent with strict System-Level Safety Boundaries."""
     
-    # System instructions act as the un-hackable baseline identity
+    # system instructions act as the un-hackable baseline identity
     safety_system_instruction = """
     You are a strictly regulated real estate valuation AI.
     SAFETY RULES:
