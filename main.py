@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import PropertyInput, FinalValuation
 from agents import run_orchestration
+from config import API_HOST, API_PORT
 
 app = FastAPI(title="Oracle Flow Agentic Valuation Engine")
 
@@ -30,4 +31,4 @@ async def evaluate_property(payload: PropertyInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# To run: uvicorn main:app --reload
+# To run: uvicorn main:app --host {API_HOST} --port {API_PORT}

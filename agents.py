@@ -1,3 +1,4 @@
+import asyncio
 from schemas import FinalValuation
 import os
 from google import genai
@@ -8,13 +9,13 @@ import json
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-# using gemini 2.5 flash
+# using gemini 2.5 flash currently but we can change as requirements of your system
 MODEL_ID = 'gemini-2.5-flash'
 
-def actor_agent(property_data: dict) -> str:
+async def actor_agent(property_data: dict) -> str:
     """The Primary Agent with strict System-Level Safety Boundaries."""
     
-    # system instructions act as the un-hackable baseline identity
+    # system instructions act as the un-hackable baseline identity - they save our system from prompt injection attacks and adversarial inputs
     safety_system_instruction = """
     You are a strictly regulated real estate valuation AI.
     SAFETY RULES:
@@ -32,13 +33,15 @@ def actor_agent(property_data: dict) -> str:
     Provide a detailed reasoning report. Do NOT format as JSON yet.
     """
     
-    response = client.models.generate_content(
+    loop = asyncio.get_event_loop()
+    
+    response = await loop.run_in_executor(None, lambda: client.models.generate_content(
         model=MODEL_ID,
         contents=prompt,
         config=types.GenerateContentConfig(
             system_instruction=safety_system_instruction
         )
-    )
+    ))
     return response.text
 
 
