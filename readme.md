@@ -8,7 +8,7 @@ In property-backed lending, AI models must process unstructured, real-world data
 
 ## System Architecture
 
-Oracle Flow is built as a modular FastAPI backend that orchestrates multiple AI agents (using Google's Gemini 2.5 Flash model) to perform secure, empirical, and alignment-checked real estate valuations.
+Oracle Flow is built as a modular FastAPI backend that orchestrates multiple AI agents (using Google's Gemini 2.5 Flash model) to perform secure, empirical, and alignment-checked real estate valuations. The backend is organized as an `agents/` package so each stage has a focused responsibility and can be tested independently.
 
 ```mermaid
 graph TD
@@ -16,7 +16,8 @@ graph TD
     API -->|PropertyInput| Orchestrator[Agent Orchestrator]
 
     subgraph Multi-Agent System
-        Orchestrator -->|Draft Request| Actor[Actor Agent]
+        Orchestrator -->|Property Context| Researcher[Researcher Agent]
+        Researcher -->|Context + Safety Signals| Actor[Actor Agent]
         Actor -->|Raw Text Draft + Reasoning| Orchestrator
         Orchestrator -->|Draft + Original Input| Evaluator[Evaluator/Judge Agent]
     end
@@ -34,12 +35,39 @@ graph TD
    - Receives incoming requests, validates payloads using Pydantic, triggers the orchestration layer, and handles exceptions.
 
 2. **Agentic Orchestration (`agents/`)**
-   The system utilizes a two-agent verification architecture to ensure output quality and prompt injection safety:
-   - **The Researcher Agent:** Builds lightweight property context and pre-LLM safety signals.
-   - **The Actor Agent (Generator):** Acts as the primary valuation AI. It analyzes empirical property characteristics (size, location, age) to draft a baseline valuation and liquidity index. It is constrained by strict safety boundaries to reject prompt injections, absurd properties, and subjective biases.
-   - **The Evaluator Agent (The Judge):** Provides scalable oversight. It audits the Actor's logic against specific safety checks (Safety Violation, Adversarial/Prompt Injection, Bias, and Out-of-Distribution) and enforces the strict JSON schema for the final output.
+   The workflow is separated into small, explicit modules:
 
--
+   ```text
+   agents/
+   ├── __init__.py            # Public orchestration entry point
+   ├── researcher_agent.py   # Builds property context and safety signals
+   ├── actor_agent.py        # Generates the initial valuation draft
+   ├── evaluator_agent.py    # Judges, audits, and structures the final result
+   ├── shared.py             # Shared Gemini, safety, prompt, and refusal helpers
+   └── retry.py              # Retries transient model/API failures
+   ```
+
+   The orchestration runs in this order:
+
+   ```text
+   Request → Researcher → Actor → Evaluator/Judge → FinalValuation
+   ```
+
+   - **Researcher Agent:** Builds lightweight property context and detects initial risk signals.
+   - **Actor Agent (Generator):** Drafts the baseline valuation, resale potential, and estimated sale time using property characteristics.
+   - **Evaluator Agent (Judge):** Reviews the draft against the original request, checks for prompt injection, out-of-distribution inputs, bias, unsupported premiums, and incomplete reasoning, then returns the final structured result.
+   - **Shared helpers:** Keep Gemini setup, safety detection, prompt construction, refusal responses, and logging consistent.
+   - **Retry utility:** Retries transient failures only, not validation failures or safety refusals.
+
+### Why the package separation improves the system
+
+- **Clear responsibilities:** Each agent has one role, making the workflow easier to understand and review.
+- **Independent testing:** Safety helpers, schemas, orchestration, and API behavior can be tested without calling Gemini for every test.
+- **Safer oversight:** The evaluator receives both the original input and actor draft before the result reaches the API response.
+- **Easier model changes:** One agent can be updated or replaced without rewriting the API layer.
+- **Consistent failure handling:** Shared refusal and retry helpers prevent unsafe or malformed success responses.
+- **Better maintainability:** Smaller modules reduce coupling and make future features easier to add.
+- **Improved observability:** Agent-level logging shows where a request started, completed, or failed.
 
 ### Data Flow and Safety Pipeline
 
@@ -56,11 +84,48 @@ This system is hardcoded to reject unsafe or misaligned inputs:
 - **OOD Rejection:** Automatically refuses to value Out-of-Distribution assets (e.g., absurd property types or locations).
 - **Strict Schema Enforcement:** Financial metrics are zeroed out and `is_safe_to_process` is set to `False` if the input fails the alignment audit.
 
+## Test Suite
+
+Automated backend tests are located in `tests/`:
+
+```text
+tests/
+├── test_api.py       # FastAPI routes, validation, and error handling
+├── test_schemas.py   # Request and response model validation
+└── test_shared.py    # Safety detection and refusal helpers
+```
+
+Run the backend suite from the repository root:
+
+```bash
+python -m pytest -q
+```
+
+The suite covers:
+
+- Health and root endpoints
+- Valid and invalid evaluation requests
+- Property size, age, and input validation
+- Prompt injection and out-of-distribution detection
+- Refusal response structure
+- Agent orchestration with mocked model calls
+- API error handling
+
+External Gemini calls are mocked or isolated where possible, making the tests repeatable and suitable for local development and CI. The current release passes all 42 backend tests.
+
+Frontend release checks:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
 ## Installation & Quickstart
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/oracle-flow.git
+git clone https://github.com/R123456-123/oracle-flow.git
 cd oracle-flow
 
 # Install dependencies
