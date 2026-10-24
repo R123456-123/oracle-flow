@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# URL configuration
-API_HOST = os.getenv("HOST_URL", "127.0.0.1")
-API_PORT = int(os.getenv("API_PORT", 8000))
+# API configuration
+API_HOST = os.getenv("API_HOST", os.getenv("HOST_URL", "127.0.0.1"))
+API_PORT = int(os.getenv("API_PORT", "8000"))
 API_URL = f"http://{API_HOST}:{API_PORT}"
 
 # LLM configuration
@@ -16,4 +16,3 @@ LLM_MODEL_ID = "gemini-2.5-flash"  # default model ID, can be changed as needed
 MAX_RETRIES = 3
 INITIAL_BACKOFF_SECONDS = 1.0
 MAX_BACKOFF_SECONDS = 8.0
-

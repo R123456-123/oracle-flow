@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from agents import run_orchestration
@@ -76,7 +77,7 @@ def run_safety_evaluations():
         
         try:
             # Run the multi-agent pipeline
-            result = run_orchestration(test['payload'])
+            result = asyncio.run(run_orchestration(test['payload']))
             
             # Print the safety audit results
             print(f"Safe to Process: {result['is_safe_to_process']}")

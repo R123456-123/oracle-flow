@@ -14,13 +14,13 @@ Oracle Flow is built as a modular FastAPI backend that orchestrates multiple AI 
 graph TD
     Client[Client Request] -->|POST /api/v1/evaluate| API[FastAPI API Layer]
     API -->|PropertyInput| Orchestrator[Agent Orchestrator]
-    
+
     subgraph Multi-Agent System
         Orchestrator -->|Draft Request| Actor[Actor Agent]
         Actor -->|Raw Text Draft + Reasoning| Orchestrator
         Orchestrator -->|Draft + Original Input| Evaluator[Evaluator/Judge Agent]
     end
-    
+
     Evaluator -->|Structured JSON| Orchestrator
     Orchestrator -->|FinalValuation| API
     API -->|JSON Response| Client
@@ -33,16 +33,13 @@ graph TD
    - **Endpoint:** `POST /api/v1/evaluate`
    - Receives incoming requests, validates payloads using Pydantic, triggers the orchestration layer, and handles exceptions.
 
-2. **Agentic Orchestration (`agents.py`)**
+2. **Agentic Orchestration (`agents/`)**
    The system utilizes a two-agent verification architecture to ensure output quality and prompt injection safety:
+   - **The Researcher Agent:** Builds lightweight property context and pre-LLM safety signals.
    - **The Actor Agent (Generator):** Acts as the primary valuation AI. It analyzes empirical property characteristics (size, location, age) to draft a baseline valuation and liquidity index. It is constrained by strict safety boundaries to reject prompt injections, absurd properties, and subjective biases.
-   - **The Evaluator Agent (The Judge):** Provides scalable oversight. It programmatically audits the Actor's logic against specific safety checks (Safety Violation, Adversarial/Prompt Injection, Bias, and Out-of-Distribution). It enforces the strict JSON schema for the final output.
+   - **The Evaluator Agent (The Judge):** Provides scalable oversight. It audits the Actor's logic against specific safety checks (Safety Violation, Adversarial/Prompt Injection, Bias, and Out-of-Distribution) and enforces the strict JSON schema for the final output.
 
-3. **Data Models (`schemas.py`)**
-   Data integrity and input/output validation are handled via strict Pydantic schemas:
-   - **`PropertyInput`:** Captures raw user input.
-   - **`AuditLog`:** Tracks safety and reliability metrics including hallucination checks, prompt injection detection, and bias flagging.
-   - **`FinalValuation`:** The comprehensive final output schema, incorporating safety flags, financial estimates, and the full audit log.
+-
 
 ### Data Flow and Safety Pipeline
 
@@ -54,6 +51,7 @@ graph TD
 ## Guardrails & Safety Features
 
 This system is hardcoded to reject unsafe or misaligned inputs:
+
 - **Prompt Injection Defense:** System-level instructions and the Evaluator Agent actively scan for override commands.
 - **OOD Rejection:** Automatically refuses to value Out-of-Distribution assets (e.g., absurd property types or locations).
 - **Strict Schema Enforcement:** Financial metrics are zeroed out and `is_safe_to_process` is set to `False` if the input fails the alignment audit.
@@ -70,11 +68,25 @@ python -m venv venv
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 pip install -r requirements.txt
 
-# Set up your environment variable
-echo "GEMINI_API_KEY=your_api_key_here" > .env
+# Set up your environment variables
+# Windows PowerShell:
+Set-Content .env "GEMINI_API_KEY=your_api_key_here`nAPI_HOST=127.0.0.1`nAPI_PORT=8000"
 
 # Run the FastAPI server
-uvicorn main:app --reload
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+For the frontend, create `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+Then run it from the `frontend` directory:
+
+```bash
+npm install
+npm run dev
 ```
 
 ## Running Safety Evaluations
