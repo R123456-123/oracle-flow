@@ -2,10 +2,11 @@
 
 import pytest
 from pydantic import ValidationError
-from schemas import PropertyInput, FinalValuation, AuditLog
 
+from schemas import PropertyInput
 
 # ── Happy path ──────────────────────────────────────────────────────────────
+
 
 class TestPropertyInputValid:
     """Verify that well-formed inputs pass validation."""
@@ -51,6 +52,7 @@ class TestPropertyInputValid:
 
 # ── Prompt injection detection ──────────────────────────────────────────────
 
+
 class TestPromptInjectionRejection:
     """Verify that injection keywords in address/property_type are rejected."""
 
@@ -93,6 +95,7 @@ class TestPromptInjectionRejection:
 
 # ── Size bounds ─────────────────────────────────────────────────────────────
 
+
 class TestSizeBounds:
     """Verify that absurd property sizes are rejected."""
 
@@ -134,6 +137,7 @@ class TestSizeBounds:
 
 
 # ── Field constraints ───────────────────────────────────────────────────────
+
 
 class TestFieldConstraints:
     """Verify min_length and ge constraints."""

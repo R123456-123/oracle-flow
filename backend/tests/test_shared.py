@@ -1,17 +1,16 @@
 """Unit tests for agents/shared.py — safety detection and helper functions."""
 
-import pytest
 from agents.shared import (
-    build_research_context,
-    build_refusal_response,
-    contains_any,
-    normalize_text,
     INJECTION_PATTERNS,
     OOD_PATTERNS,
+    build_refusal_response,
+    build_research_context,
+    contains_any,
+    normalize_text,
 )
 
-
 # ── normalize_text ──────────────────────────────────────────────────────────
+
 
 class TestNormalizeText:
     def test_strips_and_lowercases(self):
@@ -25,6 +24,7 @@ class TestNormalizeText:
 
 
 # ── contains_any ────────────────────────────────────────────────────────────
+
 
 class TestContainsAny:
     def test_detects_pattern(self):
@@ -44,6 +44,7 @@ class TestContainsAny:
 
 
 # ── build_research_context ──────────────────────────────────────────────────
+
 
 class TestBuildResearchContext:
     """Verify that the pre-LLM safety screening works correctly."""
@@ -147,6 +148,7 @@ class TestBuildResearchContext:
 
 
 # ── build_refusal_response ──────────────────────────────────────────────────
+
 
 class TestBuildRefusalResponse:
     """Verify that refusal responses are correctly structured."""

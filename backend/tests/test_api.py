@@ -6,19 +6,47 @@ kept to endpoint contract validation only.
 """
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
+from database import get_db_session
 from main import app
+
+
+class FakeSession:
+    """Minimal async session double for API contract tests."""
+
+    async def execute(self, statement):
+        return None
+
+    async def commit(self):
+        return None
+
+    async def refresh(self, instance):
+        return None
+
+    async def rollback(self):
+        return None
+
+    def add(self, instance):
+        return None
+
+
+async def fake_db_session():
+    yield FakeSession()
 
 
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""
+    app.dependency_overrides[get_db_session] = fake_db_session
     transport = ASGITransport(app=app)
-    return AsyncClient(transport=transport, base_url="http://test")
+    client = AsyncClient(transport=transport, base_url="http://test")
+    yield client
+    app.dependency_overrides.clear()
 
 
 # ── Health & Root ───────────────────────────────────────────────────────────
+
 
 class TestHealthEndpoints:
     @pytest.mark.asyncio
@@ -40,6 +68,7 @@ class TestHealthEndpoints:
 
 
 # ── Input Validation (no LLM needed) ───────────────────────────────────────
+
 
 class TestInputValidation:
     """These tests verify that invalid payloads are rejected at the API
